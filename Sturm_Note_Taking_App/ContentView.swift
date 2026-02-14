@@ -84,9 +84,12 @@ struct ContentView: View {
             .navigationTitle("Notes")
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        viewModel.addNote(title: "New Note", content: "")
-                    } label: {
+                    //                    Button {
+                    //                        viewModel.addNote(title: "New Note", content: "")
+                    //                    } label: {
+                    //                        Image(systemName: "plus")
+                    //                    }
+                    NavigationLink(destination: AddNoteView(viewModel: viewModel)) {
                         Image(systemName: "plus")
                     }
                 }
@@ -112,7 +115,8 @@ struct AddNoteView: View {
                 .padding()
             
             Button("Add Note"){
-                
+                viewModel.addNote(title: title, content: content)
+                dismiss()
             }
         }
     }
