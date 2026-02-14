@@ -18,9 +18,7 @@ Add a property `isCompleted` of type `Bool`
 */
 class NotesViewModel: ObservableObject{
     
-    @Published var notesList: [Note] = [
-        Note(title: "Sample Note", content: "This is your first note.", isCompleted: false)
-    ]
+    @Published var notesList: [Note] = []
     
     /**
     Add Note Function
@@ -38,8 +36,6 @@ class NotesViewModel: ObservableObject{
     Delete Function
         Removes items from array + removes all variables attached (UUID, title, content, isCompleted)
         Uses .remove() method
-        
-     
      **/
     
     func addNote(title: String, content: String){
@@ -78,8 +74,12 @@ struct ContentView: View {
 
     var body: some View {
         NavigationStack {
-            List(viewModel.notesList) { note in
-                Text(note.title)
+            List{
+                ForEach(viewModel.notesList){note in
+                    Text(note.title)
+                }
+                .onDelete(perform: viewModel.deleteNote)
+                
             }
             .navigationTitle("Notes")
             .toolbar {
@@ -91,14 +91,28 @@ struct ContentView: View {
                     }
                 }
             }
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button {
-                        viewModel.toggleCompletion(id: <#T##UUID#>)
-                    } label: {
-                        Image(systemName: "checkmark")
-                    }
-                }
+        }
+    }
+}
+
+struct AddNoteView: View {
+    @State private var title: String = ""
+    @State private var content: String = ""
+    
+    @ObservedObject var viewModel: NotesViewModel
+    @Environment(\.dismiss) var dismiss
+    
+    var body: some View {
+        VStack{
+            TextField("Title", text: $title)
+                .textFieldStyle(RoundedBorderTextFieldStyle())
+                .padding()
+            
+            TextEditor(text: $content)
+                .padding()
+            
+            Button("Add Note"){
+                
             }
         }
     }
