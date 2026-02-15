@@ -20,6 +20,11 @@ class NotesViewModel: ObservableObject{
     
     @Published var notesList: [Note] = []
     
+    init(){
+        loadData()
+    }
+    
+    
     /**
     Add Note Function
         get note title, content and isCompleted values.
@@ -41,23 +46,44 @@ class NotesViewModel: ObservableObject{
     func addNote(title: String, content: String){
         let newNote = Note(title: title, content: content, isCompleted: false)
         notesList.append(newNote)
+        saveData()
     }
     
     func updateNote(id: UUID, title: String, content: String, isCompleted: Bool){
         if let index = notesList.firstIndex(where: { $0.id == id }) {
             notesList[index].title = title
             notesList[index].content = content
+            notesList[index].isCompleted = isCompleted
         }
+        saveData()
     }
     
     func toggleCompletion(id: UUID){
         if let index = notesList.firstIndex(where: { $0.id == id }) {
             notesList[index].isCompleted.toggle()
         }
+        saveData()
     }
     
     func deleteNote(at offsets: IndexSet) {
         notesList.remove(atOffsets: offsets)
+        saveData()
+    }
+    
+    func saveData(){
+        let encoder = JSONEncoder()
+        if let encoded = try? encoder.encode(notesList){
+            UserDefaults.standard.set(encoded, forKey: "notes")
+        }
+    }
+    
+    func loadData(){
+        if let savedNotes = UserDefaults.standard.data(forKey: "notes"){
+            let decoder = JSONDecoder()
+            if let loadedNotes = try? decoder.decode([Note].self, from: savedNotes){
+                notesList = loadedNotes
+            }
+        }
     }
 }
     
@@ -75,23 +101,39 @@ struct ContentView: View {
     var body: some View {
         NavigationStack {
             List{
-                ForEach(viewModel.notesList){note in
-                    NavigationLink(destination: DisplayNoteView(NotePassed: note, viewModel: viewModel)){
-                        HStack{
-                            if note.isCompleted{
-                                Image(systemName: "checkmark.circle.fill")
-                                .onTapGesture { viewModel.toggleCompletion(id: note.id) }
+                Section(header: Text("My Tasks").foregroundColor(.blue)){
+                    ForEach(viewModel.notesList){note in
+                        NavigationLink(destination: DisplayNoteView(NotePassed: note, viewModel: viewModel)){
+                            HStack{
+                                if note.isCompleted{
+                                    Image(systemName: "checkmark.circle.fill")
+                                        .onTapGesture { viewModel.toggleCompletion(id: note.id) }
+                                }
+                                else{
+                                    Image(systemName: "circle")
+                                        .onTapGesture { viewModel.toggleCompletion(id: note.id) }
+                                }
+                                Text(note.title)
+                                    .strikethrough(note.isCompleted)
+                                    .foregroundColor(note.isCompleted ? .gray : .primary)
                             }
-                            else{
-                                Image(systemName: "circle")
-                                .onTapGesture { viewModel.toggleCompletion(id: note.id) }
-                            }
-                            Text(note.title)
                         }
                     }
+                    .onDelete(perform: viewModel.deleteNote)
                 }
-                .onDelete(perform: viewModel.deleteNote)
             }
+            .scrollContentBackground(.hidden)
+            .background(
+                AsyncImage(url: URL(string: "https://images.unsplash.com/photo-1557683316-973673baf926?q=80&w=3000&auto=format&fit=crop")) { image in
+                    image
+                        .resizable()
+                        .scaledToFill()
+                        .ignoresSafeArea()
+                        .opacity(0.4)
+                } placeholder: {
+                    ProgressView() // Shows a loading spinner while the image fetches
+                }
+            )
             .navigationTitle("Notes")
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
@@ -138,20 +180,27 @@ struct DisplayNoteView: View {
     var body: some View {
         VStack{
             TextField("Title", text: $title)
+                .strikethrough(NotePassed.isCompleted)
+                .foregroundColor(NotePassed.isCompleted ? .gray : .primary)
                 .textFieldStyle(RoundedBorderTextFieldStyle())
                 .padding()
             
             TextEditor(text: $content)
+                .scrollContentBackground(.hidden)
+                .background(
+                    LinearGradient(colors: [.blue.opacity(0.2), .purple.opacity(0.2)], startPoint: .topLeading, endPoint: .bottomTrailing)
+                )
                 .padding()
-            
-            Button("Note"){
+        
+            Button("Done"){
                 viewModel.updateNote(id: NotePassed.id,title: title, content: content, isCompleted: NotePassed.isCompleted)
                 dismiss()
             }
-            .onAppear(){
-                title = NotePassed.title
-                content = NotePassed.content
-            }
+            
+        }
+        .onAppear(){
+            title = NotePassed.title
+            content = NotePassed.content
         }
     }
 }
