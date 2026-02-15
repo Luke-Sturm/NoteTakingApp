@@ -76,19 +76,25 @@ struct ContentView: View {
         NavigationStack {
             List{
                 ForEach(viewModel.notesList){note in
-                    Text(note.title)
+                    NavigationLink(destination: DisplayNoteView(NotePassed: note, viewModel: viewModel)){
+                        HStack{
+                            if note.isCompleted{
+                                Image(systemName: "checkmark.circle.fill")
+                                .onTapGesture { viewModel.toggleCompletion(id: note.id) }
+                            }
+                            else{
+                                Image(systemName: "circle")
+                                .onTapGesture { viewModel.toggleCompletion(id: note.id) }
+                            }
+                            Text(note.title)
+                        }
+                    }
                 }
                 .onDelete(perform: viewModel.deleteNote)
-                
             }
             .navigationTitle("Notes")
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    //                    Button {
-                    //                        viewModel.addNote(title: "New Note", content: "")
-                    //                    } label: {
-                    //                        Image(systemName: "plus")
-                    //                    }
                     NavigationLink(destination: AddNoteView(viewModel: viewModel)) {
                         Image(systemName: "plus")
                     }
@@ -117,6 +123,34 @@ struct AddNoteView: View {
             Button("Add Note"){
                 viewModel.addNote(title: title, content: content)
                 dismiss()
+            }
+        }
+    }
+}
+struct DisplayNoteView: View {
+    @State private var title: String = ""
+    @State private var content: String = ""
+    var NotePassed: Note
+    
+    @ObservedObject var viewModel: NotesViewModel
+    @Environment(\.dismiss) var dismiss
+    
+    var body: some View {
+        VStack{
+            TextField("Title", text: $title)
+                .textFieldStyle(RoundedBorderTextFieldStyle())
+                .padding()
+            
+            TextEditor(text: $content)
+                .padding()
+            
+            Button("Note"){
+                viewModel.updateNote(id: NotePassed.id,title: title, content: content, isCompleted: NotePassed.isCompleted)
+                dismiss()
+            }
+            .onAppear(){
+                title = NotePassed.title
+                content = NotePassed.content
             }
         }
     }
